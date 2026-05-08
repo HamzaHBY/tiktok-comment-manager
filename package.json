@@ -1,0 +1,29 @@
+{
+  "name": "tiktok-comment-manager",
+  "version": "1.0.0",
+  "description": "Personal productivity dashboard to manage your own TikTok accounts and post (or schedule) comments on videos from a single place using TikTok's official OAuth 2.0 Login Kit and v2 Comment API.",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "tiktok",
+    "oauth2",
+    "comments",
+    "scheduler",
+    "dashboard",
+    "express"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "node-cron": "^3.0.3"
+  }
+}

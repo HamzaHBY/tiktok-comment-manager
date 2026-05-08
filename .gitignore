@@ -1,0 +1,8 @@
+node_modules/
+.env
+data/accounts.json
+data/jobs.json
+*.log
+.DS_Store
+.vscode/
+.idea/
