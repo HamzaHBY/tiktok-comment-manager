@@ -2,6 +2,7 @@ node_modules/
 .env
 data/accounts.json
 data/jobs.json
+data/users.json
 *.log
 .DS_Store
 .vscode/

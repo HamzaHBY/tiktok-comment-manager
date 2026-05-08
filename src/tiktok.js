@@ -207,7 +207,7 @@ class TikTokClient {
   }
 
   async getValidAccessToken(accountId) {
-    const account = await this.accountStore.getById(accountId);
+    const account = await this.accountStore.getByIdInternal(accountId);
     if (!account) throw new Error('Account not found: ' + accountId);
 
     const tokens = await this.accountStore.getDecryptedTokens(accountId);

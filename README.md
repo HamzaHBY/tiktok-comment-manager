@@ -1,8 +1,8 @@
 # tiktok-comment-manager
 
-A personal-productivity dashboard that lets you manage your **own** TikTok
-accounts and post (or schedule) comments on TikTok videos from a single
-place — no more switching browser tabs.
+A self-hosted, multi-user dashboard that lets each user manage their
+**own** TikTok accounts and post (or schedule) comments on TikTok videos
+from a single place — no more switching browser tabs.
 
 It uses TikTok's official **[TikTok for Developers](https://developers.tiktok.com/)**
 APIs end-to-end:
@@ -13,9 +13,10 @@ APIs end-to-end:
 - The **v2 OAuth token endpoint** to refresh access tokens automatically
   before they expire.
 
-All tokens are encrypted with **AES-256-GCM** and stored locally in
-`data/accounts.json`. There is no database — everything lives in JSON
-files on your machine.
+User accounts are protected by signed (HS256) JWT session cookies and
+**scrypt**-hashed passwords. TikTok tokens are encrypted with
+**AES-256-GCM** and stored locally in `data/accounts.json`. There is no
+database — everything lives in JSON files on your machine.
 
 > ⚠️ This project is intended for managing **TikTok accounts you own**.
 > Posting comments through any TikTok API requires that the authenticated
@@ -26,8 +27,14 @@ files on your machine.
 
 ## Features
 
-- **OAuth 2.0 Login Kit** — Connect any number of your own TikTok
-  accounts through TikTok's official consent flow.
+- **Multi-user auth** — Email + password signup, scrypt-hashed
+  passwords, JWT session cookies (HttpOnly, SameSite=Lax). Every TikTok
+  account and comment job is scoped to the user that owns it.
+- **Landing, login, signup pages** — Public marketing landing page with
+  hero, features, how-it-works, demo, pricing, FAQ, CTA, and footer
+  sections, plus dedicated `/login` and `/signup` pages.
+- **OAuth 2.0 Login Kit** — Connect any number of TikTok accounts
+  through TikTok's official consent flow.
 - **Encrypted token vault** — Access and refresh tokens are AES-256-GCM
   encrypted at rest using a key from `ENCRYPTION_KEY`.
 - **Auto refresh** — Access tokens are refreshed automatically (with a
@@ -37,8 +44,8 @@ files on your machine.
   automatically by a `node-cron` worker.
 - **Queue & History** — See pending/scheduled comments, cancel them, and
   review the success/failure log.
-- **Single-page dashboard** — Dark theme with TikTok's signature
-  `#FE2C55` accent. Pure HTML/CSS/JS, no build step.
+- **Dashboard** — Dark theme with TikTok's signature `#FE2C55` accent.
+  Pure HTML/CSS/JS, no build step.
 
 ---
 
@@ -61,19 +68,27 @@ tiktok-comment-manager/
 ├── package.json
 ├── .env.example
 ├── public/
-│   └── index.html             # Dashboard (4 tabs)
+│   ├── index.html             # Public landing page
+│   ├── login.html             # Login form
+│   ├── signup.html            # Signup form
+│   ├── app.html               # Authenticated dashboard (4 tabs)
+│   └── styles.css             # Shared landing/auth styles
 ├── src/
 │   ├── config.js              # Loads/validates env config
 │   ├── crypto.js              # AES-256-GCM helpers + state/PKCE
-│   ├── store.js               # AccountStore + JobStore (JSON files)
+│   ├── jwt.js                 # HS256 sign/verify (no deps)
+│   ├── users.js               # UserStore (scrypt password hashing)
+│   ├── store.js               # AccountStore + JobStore (per-user)
 │   ├── tiktok.js              # TikTok OAuth + Comment API client
 │   ├── scheduler.js           # node-cron worker
 │   └── routes/
 │       ├── auth.js            # /auth/tiktok and /auth/tiktok/callback
+│       ├── users.js           # /api/auth/{signup,login,logout,me}
 │       ├── accounts.js        # /api/accounts
 │       ├── comments.js        # /api/comment
 │       └── jobs.js            # /api/jobs
 └── data/                      # Created on first run, git-ignored
+    ├── users.json
     ├── accounts.json
     └── jobs.json
 ```
@@ -130,10 +145,12 @@ Clone the repo and create a `.env` file from the template:
 cp .env.example .env
 ```
 
-Generate a strong 32-byte encryption key for the local token vault:
+Generate a strong 32-byte encryption key for the local token vault and
+a long random JWT secret for session cookies:
 
 ```bash
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 ```
 
 Open `.env` and fill in the values:
@@ -143,7 +160,9 @@ TIKTOK_CLIENT_KEY=awxxxxxxxxxxxxxxxx
 TIKTOK_CLIENT_SECRET=your_client_secret_from_the_developer_portal
 APP_URL=http://localhost:3000
 PORT=3000
-ENCRYPTION_KEY=<paste the 64-char hex string from the command above>
+ENCRYPTION_KEY=<64-char hex string from the first command above>
+JWT_SECRET=<long hex string from the second command above (>= 32 chars)>
+SESSION_TTL_DAYS=7
 ```
 
 > **Important:** `APP_URL` must match the host part of the redirect
@@ -161,13 +180,17 @@ npm start
 
 Then open <http://localhost:3000> in your browser.
 
-The dashboard has four tabs:
+You'll land on the public landing page. Click **Sign up free** to
+create an account (email + password), or **Log in** if you already
+have one. After authenticating you'll be redirected to `/app` — the
+authenticated dashboard with four tabs:
 
 1. **Accounts** — click **Connect TikTok Account** to start the OAuth
    flow. TikTok opens a popup, you log in and approve the requested
    scopes, and the account appears in the list once the callback is
    complete. You can disconnect any account from here (this also
-   revokes the token with TikTok).
+   revokes the token with TikTok). Each user only sees their own
+   connected accounts.
 2. **Post Comment** — pick a connected account, paste a video URL,
    write your comment, and either submit immediately or pick a future
    date/time to schedule it.
@@ -175,6 +198,8 @@ The dashboard has four tabs:
    that has not run yet.
 4. **History** — log of every comment that was successfully posted,
    failed, or was cancelled, with the TikTok response/error attached.
+
+Click **Log out** in the header to end your session.
 
 For development with auto-restart on file changes:
 
@@ -189,7 +214,39 @@ npm run dev
 ## API reference
 
 The same backend powers the dashboard and is also a clean REST surface
-you can hit from your own scripts.
+you can hit from your own scripts. All endpoints under `/api/accounts`,
+`/api/comment`, and `/api/jobs` require an authenticated session
+(send the `tcm_session` cookie returned from `/api/auth/login`).
+
+### `POST /api/auth/signup`
+
+Create a new user.
+
+```json
+{ "email": "you@example.com", "password": "at-least-8-chars", "displayName": "optional" }
+```
+
+Returns `201` with `{ "user": { "id", "email", "displayName" } }` and
+sets a `tcm_session` HttpOnly cookie.
+
+### `POST /api/auth/login`
+
+Authenticate an existing user.
+
+```json
+{ "email": "you@example.com", "password": "at-least-8-chars" }
+```
+
+Returns `200` with `{ "user": ... }` and sets the session cookie.
+Returns `401` if the credentials are invalid.
+
+### `POST /api/auth/logout`
+
+Clears the `tcm_session` cookie. Returns `200 { "ok": true }`.
+
+### `GET /api/auth/me`
+
+Returns the currently authenticated user, or `401` if not logged in.
 
 ### `GET /api/accounts`
 
@@ -264,11 +321,28 @@ pending and scheduled jobs are preserved).
 
 ### `GET /api/health`
 
-Returns the configured `appUrl`, `redirectUri`, and `scopes`. Useful
-for verifying that your `.env` matches what you configured in the
-TikTok developer portal.
+Returns the configured `appUrl`, `redirectUri`, `scopes`, and
+`authenticated` (whether the request carried a valid session cookie).
+Useful for verifying that your `.env` matches what you configured in
+the TikTok developer portal.
 
 ---
+
+## How user accounts are stored
+
+When a user signs up, the password is hashed with **scrypt**
+(`N=32768, r=8, p=1`) and stored alongside the user record in
+`data/users.json`. The plaintext password never touches disk.
+
+A successful login (or signup) returns an HS256-signed JWT containing
+`{ sub: userId, email, iat, exp }`. The token is set as an
+HttpOnly, SameSite=Lax cookie named `tcm_session` (the cookie is also
+flagged `Secure` when `APP_URL` starts with `https://`). The cookie's
+`Max-Age` defaults to 7 days and can be tuned via `SESSION_TTL_DAYS`.
+
+Every TikTok account, comment, and scheduled job is scoped to the
+`userId` of the user that created it. Other users on the same install
+cannot see or act on it.
 
 ## How token storage works
 
@@ -297,14 +371,18 @@ deploy it somewhere:
 
 - Generate a fresh `ENCRYPTION_KEY` per deployment (it must be a
   64-character hex string).
+- Generate a fresh `JWT_SECRET` per deployment (at least 32 random
+  characters). Rotating it will invalidate all existing sessions.
 - Put the app behind HTTPS — the OAuth redirect URI must use HTTPS in
-  production.
+  production, and the session cookie is only flagged `Secure` when
+  `APP_URL` starts with `https://`.
 - Set `APP_URL=https://your-public-host` and add
   `https://your-public-host/auth/tiktok/callback` to the redirect URIs
   in the TikTok developer portal.
 - Make sure `data/` is on persistent storage that is **not** publicly
   served. The `.gitignore` shipped with this repo already excludes
-  `data/accounts.json` and `data/jobs.json` from version control.
+  `data/accounts.json`, `data/jobs.json`, and `data/users.json` from
+  version control.
 
 ---
 
@@ -314,6 +392,8 @@ deploy it somewhere:
   `.env.example` to `.env` and fill in real values.
 - **`ENCRYPTION_KEY must be a 64-character hex string`** — regenerate
   it with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`.
+- **`JWT_SECRET must be at least 32 characters long`** — regenerate it
+  with `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`.
 - **OAuth redirect mismatch** — the redirect URI registered in the
   TikTok developer portal must exactly match `${APP_URL}/auth/tiktok/callback`,
   including scheme, host, port, and path.

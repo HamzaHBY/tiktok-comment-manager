@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Log in · TikTok Comment Manager</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body class="auth">
+    <div class="auth-shell">
+      <div class="auth-card">
+        <a class="brand" href="/">
+          <span class="brand-dot"></span>
+          <span>TikTok Comment Manager</span>
+        </a>
+        <h1>Welcome back</h1>
+        <p class="lead">
+          Log in to manage your connected TikTok accounts and your queued
+          comments.
+        </p>
+
+        <div id="flash" class="auth-error" hidden></div>
+
+        <form id="login-form" class="auth-form" autocomplete="on" novalidate>
+          <div class="field">
+            <label for="email">Email</label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autocomplete="email"
+              required
+              placeholder="you@example.com"
+            />
+          </div>
+          <div class="field">
+            <label for="password">Password</label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              autocomplete="current-password"
+              required
+              placeholder="Your password"
+            />
+          </div>
+          <button class="btn primary" type="submit" id="submit-btn">
+            Log in
+          </button>
+        </form>
+
+        <p class="auth-meta">
+          Don't have an account? <a href="/signup">Create one</a>
+        </p>
+        <p class="auth-meta">
+          <a href="/">Back to home</a>
+        </p>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        var form = document.getElementById('login-form');
+        var flash = document.getElementById('flash');
+        var btn = document.getElementById('submit-btn');
+
+        function showError(msg) {
+          flash.textContent = msg;
+          flash.hidden = false;
+        }
+        function clearError() {
+          flash.hidden = true;
+          flash.textContent = '';
+        }
+
+        function getNextParam() {
+          try {
+            var url = new URL(window.location.href);
+            var next = url.searchParams.get('next');
+            if (next && next.charAt(0) === '/' && next.indexOf('//') !== 0) {
+              return next;
+            }
+          } catch (e) {}
+          return '/app';
+        }
+
+        form.addEventListener('submit', async function (e) {
+          e.preventDefault();
+          clearError();
+          var email = document.getElementById('email').value.trim();
+          var password = document.getElementById('password').value;
+          if (!email || !password) {
+            showError('Please enter your email and password.');
+            return;
+          }
+          btn.disabled = true;
+          btn.textContent = 'Logging in…';
+          try {
+            var res = await fetch('/api/auth/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'same-origin',
+              body: JSON.stringify({ email: email, password: password }),
+            });
+            var data = null;
+            try {
+              data = await res.json();
+            } catch (err) {}
+            if (!res.ok) {
+              showError((data && data.error) || 'Login failed');
+              return;
+            }
+            window.location.href = getNextParam();
+          } catch (err) {
+            showError('Network error. Please try again.');
+          } finally {
+            btn.disabled = false;
+            btn.textContent = 'Log in';
+          }
+        });
+
+        fetch('/api/auth/me', { credentials: 'same-origin' })
+          .then(function (res) {
+            if (res.ok) window.location.href = getNextParam();
+          })
+          .catch(function () {});
+      })();
+    </script>
+  </body>
+</html>
