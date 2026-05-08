@@ -34,6 +34,13 @@ async function writeJsonFile(file, data) {
   await fsp.rename(tmp, file);
 }
 
+function requireUserId(userId) {
+  if (typeof userId !== 'string' || !userId) {
+    throw new TypeError('userId is required');
+  }
+  return userId;
+}
+
 class AccountStore {
   constructor({ file, encryptionKey }) {
     this.file = file;
@@ -61,6 +68,7 @@ class AccountStore {
   _toPublic(account) {
     return {
       id: account.id,
+      userId: account.userId,
       openId: account.openId,
       unionId: account.unionId || null,
       displayName: account.displayName || null,
@@ -72,25 +80,30 @@ class AccountStore {
     };
   }
 
-  async list() {
+  async listForUser(userId) {
+    requireUserId(userId);
     const data = await this._readAll();
-    return data.accounts.map((a) => this._toPublic(a));
+    return data.accounts
+      .filter((a) => a.userId === userId)
+      .map((a) => this._toPublic(a));
   }
 
-  async listInternal() {
+  async getByIdForUser(id, userId) {
+    requireUserId(userId);
     const data = await this._readAll();
-    return data.accounts.slice();
+    const account = data.accounts.find(
+      (a) => a.id === id && a.userId === userId
+    );
+    return account || null;
   }
 
-  async getById(id) {
+  async getByIdInternal(id) {
     const data = await this._readAll();
-    const account = data.accounts.find((a) => a.id === id);
-    if (!account) return null;
-    return account;
+    return data.accounts.find((a) => a.id === id) || null;
   }
 
   async getDecryptedTokens(id) {
-    const account = await this.getById(id);
+    const account = await this.getByIdInternal(id);
     if (!account) return null;
     return {
       accessToken: decrypt(account.encryptedAccessToken, this.encryptionKey),
@@ -100,7 +113,8 @@ class AccountStore {
     };
   }
 
-  async upsertFromTokenResponse(tokenInfo, profile) {
+  async upsertFromTokenResponse(userId, tokenInfo, profile) {
+    requireUserId(userId);
     return this._withLock(async () => {
       const data = await this._readAll();
       const now = Date.now();
@@ -124,7 +138,9 @@ class AccountStore {
         );
       }
 
-      let account = data.accounts.find((a) => a.openId === openId);
+      let account = data.accounts.find(
+        (a) => a.userId === userId && a.openId === openId
+      );
       const scopes =
         typeof tokenInfo.scope === 'string'
           ? tokenInfo.scope.split(/[,\s]+/).filter(Boolean)
@@ -145,6 +161,7 @@ class AccountStore {
       } else {
         account = {
           id: crypto.randomUUID(),
+          userId,
           openId,
           unionId: tokenInfo.union_id || (profile && profile.union_id) || null,
           displayName: (profile && profile.display_name) || null,
@@ -194,11 +211,14 @@ class AccountStore {
     });
   }
 
-  async remove(id) {
+  async removeForUser(id, userId) {
+    requireUserId(userId);
     return this._withLock(async () => {
       const data = await this._readAll();
       const before = data.accounts.length;
-      data.accounts = data.accounts.filter((a) => a.id !== id);
+      data.accounts = data.accounts.filter(
+        (a) => !(a.id === id && a.userId === userId)
+      );
       const removed = before !== data.accounts.length;
       if (removed) await this._writeAll(data);
       return removed;
@@ -229,16 +249,27 @@ class JobStore {
     await writeJsonFile(this.file, data);
   }
 
-  async list() {
-    const data = await this._readAll();
-    return data.jobs.slice().sort((a, b) => {
+  _sort(list) {
+    return list.slice().sort((a, b) => {
       const ta = a.runAt || a.createdAt;
       const tb = b.runAt || b.createdAt;
       return tb.localeCompare(ta);
     });
   }
 
+  async listForUser(userId) {
+    requireUserId(userId);
+    const data = await this._readAll();
+    return this._sort(data.jobs.filter((j) => j.userId === userId));
+  }
+
+  async listAll() {
+    const data = await this._readAll();
+    return this._sort(data.jobs);
+  }
+
   async create(job) {
+    requireUserId(job && job.userId);
     return this._withLock(async () => {
       const data = await this._readAll();
       const now = new Date().toISOString();
@@ -273,17 +304,28 @@ class JobStore {
     return data.jobs.find((j) => j.id === id) || null;
   }
 
-  async clear() {
+  async getByIdForUser(id, userId) {
+    requireUserId(userId);
+    const data = await this._readAll();
+    return (
+      data.jobs.find((j) => j.id === id && j.userId === userId) || null
+    );
+  }
+
+  async clearForUser(userId) {
+    requireUserId(userId);
     return this._withLock(async () => {
       const data = await this._readAll();
-      const cleared = data.jobs.filter(
-        (j) => j.status !== 'pending' && j.status !== 'scheduled'
+      const isHistory = (j) =>
+        j.status !== 'pending' && j.status !== 'scheduled';
+      const removed = data.jobs.filter(
+        (j) => j.userId === userId && isHistory(j)
       ).length;
       data.jobs = data.jobs.filter(
-        (j) => j.status === 'pending' || j.status === 'scheduled'
+        (j) => !(j.userId === userId && isHistory(j))
       );
-      await this._writeAll(data);
-      return cleared;
+      if (removed) await this._writeAll(data);
+      return removed;
     });
   }
 }

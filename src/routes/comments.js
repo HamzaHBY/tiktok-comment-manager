@@ -18,7 +18,7 @@ function buildCommentsRouter({ accountStore, jobStore, scheduler, tiktokClient }
         return res.status(400).json({ error: 'accountId is required' });
       }
 
-      const account = await accountStore.getById(accountId);
+      const account = await accountStore.getByIdForUser(accountId, req.user.id);
       if (!account) {
         return res.status(404).json({ error: 'Account not found' });
       }
@@ -40,6 +40,7 @@ function buildCommentsRouter({ accountStore, jobStore, scheduler, tiktokClient }
       }
 
       const job = await jobStore.create({
+        userId: req.user.id,
         accountId,
         accountOpenId: account.openId,
         accountDisplayName: account.displayName || null,
