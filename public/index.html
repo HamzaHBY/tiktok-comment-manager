@@ -3,893 +3,469 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>TikTok Comment Manager</title>
-    <style>
-      :root {
-        --bg: #0b0b0f;
-        --panel: #14141b;
-        --panel-2: #1b1b24;
-        --border: #25252e;
-        --text: #f1f1f4;
-        --muted: #9a9aa6;
-        --accent: #fe2c55;
-        --accent-2: #25f4ee;
-        --success: #2ed573;
-        --danger: #ff4757;
-        --warning: #ffb142;
-      }
-      * {
-        box-sizing: border-box;
-      }
-      html,
-      body {
-        margin: 0;
-        padding: 0;
-        background: var(--bg);
-        color: var(--text);
-        font-family: system-ui, -apple-system, "Segoe UI", Roboto,
-          "Helvetica Neue", Arial, sans-serif;
-        min-height: 100vh;
-      }
-      a {
-        color: var(--accent);
-        text-decoration: none;
-      }
-      header.app {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 18px 28px;
-        border-bottom: 1px solid var(--border);
-        background: var(--panel);
-        position: sticky;
-        top: 0;
-        z-index: 5;
-      }
-      header.app .brand {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        font-weight: 600;
-        font-size: 18px;
-      }
-      header.app .brand .dot {
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        background: var(--accent);
-        box-shadow: 0 0 12px rgba(254, 44, 85, 0.6);
-      }
-      header.app .meta {
-        font-size: 12px;
-        color: var(--muted);
-      }
-      main {
-        max-width: 1080px;
-        margin: 0 auto;
-        padding: 24px 24px 80px;
-      }
-      .tabs {
-        display: flex;
-        gap: 4px;
-        border-bottom: 1px solid var(--border);
-        margin-bottom: 24px;
-      }
-      .tabs button {
-        background: transparent;
-        border: 0;
-        color: var(--muted);
-        padding: 12px 18px;
-        cursor: pointer;
-        font-size: 14px;
-        border-bottom: 2px solid transparent;
-        font-weight: 500;
-      }
-      .tabs button.active {
-        color: var(--text);
-        border-bottom-color: var(--accent);
-      }
-      .tabs button:hover {
-        color: var(--text);
-      }
-      .panel {
-        background: var(--panel);
-        border: 1px solid var(--border);
-        border-radius: 14px;
-        padding: 22px;
-        margin-bottom: 18px;
-      }
-      .panel h2 {
-        margin: 0 0 4px;
-        font-size: 18px;
-      }
-      .panel p.lead {
-        color: var(--muted);
-        margin: 0 0 16px;
-        font-size: 13px;
-      }
-      .row {
-        display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
-      }
-      .row > * {
-        flex: 1 1 220px;
-      }
-      label {
-        display: block;
-        font-size: 12px;
-        color: var(--muted);
-        margin-bottom: 6px;
-      }
-      input[type="text"],
-      input[type="url"],
-      input[type="datetime-local"],
-      select,
-      textarea {
-        width: 100%;
-        background: var(--panel-2);
-        color: var(--text);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        padding: 10px 12px;
-        font-size: 14px;
-        font-family: inherit;
-        outline: none;
-      }
-      textarea {
-        min-height: 110px;
-        resize: vertical;
-      }
-      input:focus,
-      select:focus,
-      textarea:focus {
-        border-color: var(--accent);
-      }
-      button.primary,
-      button.secondary,
-      button.ghost,
-      button.danger {
-        cursor: pointer;
-        font-size: 14px;
-        font-weight: 600;
-        padding: 10px 16px;
-        border-radius: 8px;
-        border: 1px solid transparent;
-        font-family: inherit;
-      }
-      button.primary {
-        background: var(--accent);
-        color: #fff;
-      }
-      button.primary:hover {
-        filter: brightness(1.05);
-      }
-      button.secondary {
-        background: var(--panel-2);
-        color: var(--text);
-        border-color: var(--border);
-      }
-      button.secondary:hover {
-        border-color: var(--accent);
-      }
-      button.ghost {
-        background: transparent;
-        color: var(--muted);
-        border-color: var(--border);
-      }
-      button.ghost:hover {
-        color: var(--text);
-      }
-      button.danger {
-        background: transparent;
-        color: var(--danger);
-        border-color: var(--danger);
-      }
-      button.danger:hover {
-        background: var(--danger);
-        color: #fff;
-      }
-      button:disabled {
-        opacity: 0.55;
-        cursor: not-allowed;
-      }
-      .form-actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: 8px;
-        margin-top: 14px;
-      }
-      .empty {
-        color: var(--muted);
-        font-size: 13px;
-        padding: 18px;
-        border: 1px dashed var(--border);
-        border-radius: 10px;
-        text-align: center;
-      }
-      .account-list,
-      .job-list {
-        display: grid;
-        gap: 10px;
-      }
-      .account-card,
-      .job-card {
-        background: var(--panel-2);
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 14px 16px;
-        display: flex;
-        align-items: center;
-        gap: 14px;
-      }
-      .account-card .avatar {
-        width: 44px;
-        height: 44px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, var(--accent), var(--accent-2));
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #fff;
-        font-weight: 600;
-        overflow: hidden;
-      }
-      .account-card .avatar img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-      }
-      .account-card .info {
-        flex: 1;
-        min-width: 0;
-      }
-      .account-card .info .name {
-        font-weight: 600;
-      }
-      .account-card .info .meta {
-        font-size: 12px;
-        color: var(--muted);
-        margin-top: 2px;
-        word-break: break-all;
-      }
-      .job-card {
-        flex-direction: column;
-        align-items: stretch;
-      }
-      .job-card .top {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-      }
-      .job-card .body {
-        margin-top: 6px;
-        font-size: 13px;
-        color: var(--text);
-        word-break: break-word;
-      }
-      .job-card .meta {
-        margin-top: 6px;
-        font-size: 12px;
-        color: var(--muted);
-        display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
-      }
-      .job-card .actions {
-        margin-top: 10px;
-        display: flex;
-        gap: 8px;
-        justify-content: flex-end;
-      }
-      .badge {
-        display: inline-flex;
-        align-items: center;
-        font-size: 11px;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-        padding: 3px 8px;
-        border-radius: 999px;
-        background: var(--panel);
-        color: var(--muted);
-        border: 1px solid var(--border);
-      }
-      .badge.success {
-        color: var(--success);
-        border-color: var(--success);
-      }
-      .badge.failed {
-        color: var(--danger);
-        border-color: var(--danger);
-      }
-      .badge.running,
-      .badge.scheduled,
-      .badge.pending {
-        color: var(--warning);
-        border-color: var(--warning);
-      }
-      .badge.cancelled {
-        color: var(--muted);
-        border-color: var(--border);
-      }
-      .toasts {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        z-index: 50;
-      }
-      .toast {
-        background: var(--panel-2);
-        border: 1px solid var(--border);
-        border-left: 4px solid var(--accent);
-        color: var(--text);
-        padding: 10px 14px;
-        border-radius: 8px;
-        font-size: 13px;
-        max-width: 320px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-      }
-      .toast.success {
-        border-left-color: var(--success);
-      }
-      .toast.error {
-        border-left-color: var(--danger);
-      }
-      .hidden {
-        display: none !important;
-      }
-      .helper {
-        font-size: 12px;
-        color: var(--muted);
-        margin-top: 6px;
-      }
-      .spinner {
-        width: 14px;
-        height: 14px;
-        border: 2px solid rgba(255, 255, 255, 0.25);
-        border-top-color: #fff;
-        border-radius: 50%;
-        animation: spin 0.8s linear infinite;
-        display: inline-block;
-        vertical-align: -2px;
-        margin-right: 6px;
-      }
-      @keyframes spin {
-        to {
-          transform: rotate(360deg);
-        }
-      }
-      .footer-hint {
-        text-align: center;
-        color: var(--muted);
-        font-size: 12px;
-        margin-top: 28px;
-      }
-    </style>
+    <title>TikTok Comment Manager — manage all your TikTok accounts in one place</title>
+    <meta
+      name="description"
+      content="A self-hosted dashboard to manage your own TikTok accounts and post (or schedule) comments via TikTok's official OAuth 2.0 Login Kit and v2 Comment API."
+    />
+    <link rel="stylesheet" href="/styles.css" />
   </head>
-  <body>
-    <header class="app">
-      <div class="brand">
-        <span class="dot"></span> TikTok Comment Manager
+  <body class="landing">
+    <header class="site-header">
+      <a class="brand" href="/">
+        <span class="brand-dot"></span>
+        <span>TikTok Comment Manager</span>
+      </a>
+      <nav class="site-nav">
+        <a href="#features">Features</a>
+        <a href="#how-it-works">How it works</a>
+        <a href="#demo">Demo</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+      <div class="site-cta">
+        <a class="btn ghost" href="/login">Log in</a>
+        <a class="btn primary" href="/signup">Sign up free</a>
       </div>
-      <div class="meta" id="health-meta">Loading…</div>
     </header>
 
-    <main>
-      <nav class="tabs" id="tabs">
-        <button data-tab="accounts" class="active">Accounts</button>
-        <button data-tab="post">Post Comment</button>
-        <button data-tab="queue">Queue</button>
-        <button data-tab="history">History</button>
-      </nav>
-
-      <section data-panel="accounts">
-        <div class="panel">
-          <h2>Connected accounts</h2>
-          <p class="lead">
-            Connect each TikTok account you own through the official TikTok
-            OAuth consent screen. Tokens are encrypted with AES-256 before
-            being saved to <code>data/accounts.json</code>.
-          </p>
-          <div class="form-actions" style="justify-content: flex-start">
-            <button class="primary" id="btn-connect">
-              Connect TikTok Account
-            </button>
-            <button class="ghost" id="btn-refresh-accounts">Refresh</button>
-          </div>
-          <div id="accounts-list" class="account-list" style="margin-top:18px"></div>
+    <section class="hero">
+      <div class="hero-inner">
+        <span class="eyebrow">Built on TikTok's official API</span>
+        <h1>
+          One dashboard for <span class="accent">every TikTok account</span> you own.
+        </h1>
+        <p class="lead">
+          Connect any number of your TikTok accounts through the official OAuth
+          consent flow. Post comments, schedule them for the perfect time, and
+          stop juggling browser tabs.
+        </p>
+        <div class="hero-actions">
+          <a class="btn primary lg" href="/signup">Create your free account</a>
+          <a class="btn ghost lg" href="#how-it-works">See how it works</a>
         </div>
-      </section>
-
-      <section data-panel="post" hidden>
-        <div class="panel">
-          <h2>Post a comment</h2>
-          <p class="lead">
-            Comment on any TikTok video using one of your connected accounts.
-            Leave the schedule empty to post immediately, or pick a future
-            date/time to schedule it.
-          </p>
-          <form id="comment-form">
-            <div class="row">
-              <div>
-                <label for="f-account">Account</label>
-                <select id="f-account" required></select>
-              </div>
-              <div>
-                <label for="f-schedule">Schedule (optional)</label>
-                <input id="f-schedule" type="datetime-local" />
-                <div class="helper">
-                  Leave blank to post now. Time is local to your browser.
-                </div>
-              </div>
-            </div>
-            <div style="margin-top:14px">
-              <label for="f-url">Video URL</label>
-              <input
-                id="f-url"
-                type="url"
-                placeholder="https://www.tiktok.com/@user/video/1234567890123456789"
-                required
-              />
-            </div>
-            <div style="margin-top:14px">
-              <label for="f-comment">Comment</label>
-              <textarea
-                id="f-comment"
-                maxlength="150"
-                placeholder="Write your comment…"
-                required
-              ></textarea>
-              <div class="helper">Up to 150 characters.</div>
-            </div>
-            <div class="form-actions">
-              <button type="submit" class="primary" id="btn-submit-comment">
-                Post comment
-              </button>
-            </div>
-          </form>
-        </div>
-      </section>
-
-      <section data-panel="queue" hidden>
-        <div class="panel">
-          <h2>Queue</h2>
-          <p class="lead">
-            Scheduled and pending comments waiting to be posted. The scheduler
-            polls every minute.
-          </p>
-          <div class="form-actions" style="justify-content: flex-start">
-            <button class="ghost" id="btn-refresh-queue">Refresh</button>
-          </div>
-          <div id="queue-list" class="job-list" style="margin-top:14px"></div>
-        </div>
-      </section>
-
-      <section data-panel="history" hidden>
-        <div class="panel">
-          <h2>History</h2>
-          <p class="lead">All previously posted, failed, or cancelled comments.</p>
-          <div class="form-actions" style="justify-content: flex-start">
-            <button class="ghost" id="btn-refresh-history">Refresh</button>
-            <button class="danger" id="btn-clear-history">Clear history</button>
-          </div>
-          <div id="history-list" class="job-list" style="margin-top:14px"></div>
-        </div>
-      </section>
-
-      <div class="footer-hint">
-        Tokens are stored locally and encrypted with AES-256-GCM. No data ever
-        leaves your machine except calls to TikTok's own API.
+        <ul class="hero-bullets">
+          <li>Official OAuth 2.0 Login Kit</li>
+          <li>AES-256 token encryption at rest</li>
+          <li>Auto-refresh expiring tokens</li>
+          <li>node-cron scheduler</li>
+        </ul>
       </div>
-    </main>
+      <div class="hero-art" aria-hidden="true">
+        <div class="hero-card">
+          <div class="hero-card-row">
+            <span class="hero-dot red"></span>
+            <span class="hero-dot teal"></span>
+            <span class="hero-dot mute"></span>
+            <span class="hero-card-title">/app — Accounts</span>
+          </div>
+          <div class="hero-account">
+            <div class="hero-avatar">A</div>
+            <div>
+              <div class="hero-name">@your.handle</div>
+              <div class="hero-sub">open_id · 7281…</div>
+            </div>
+            <span class="badge success">connected</span>
+          </div>
+          <div class="hero-account">
+            <div class="hero-avatar alt">B</div>
+            <div>
+              <div class="hero-name">@side.project</div>
+              <div class="hero-sub">scopes · 4</div>
+            </div>
+            <span class="badge success">connected</span>
+          </div>
+          <div class="hero-account">
+            <div class="hero-avatar alt2">C</div>
+            <div>
+              <div class="hero-name">@brand.alt</div>
+              <div class="hero-sub">refreshed 2m ago</div>
+            </div>
+            <span class="badge scheduled">queued</span>
+          </div>
+        </div>
+      </div>
+    </section>
 
-    <div class="toasts" id="toasts"></div>
+    <section id="features" class="section">
+      <div class="section-head">
+        <span class="eyebrow">Features</span>
+        <h2>Everything you need to run multiple TikTok accounts</h2>
+        <p class="lead">
+          A focused tool, not a sprawling SaaS. Every feature exists because
+          switching tabs to comment on the same video three times in a row was
+          slowing you down.
+        </p>
+      </div>
+      <div class="grid-3">
+        <article class="card">
+          <div class="card-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+          </div>
+          <h3>Official OAuth 2.0</h3>
+          <p>
+            Each account authenticates through TikTok's own Login Kit. Tokens
+            never touch a third-party server.
+          </p>
+        </article>
+        <article class="card">
+          <div class="card-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <h3>AES-256 token vault</h3>
+          <p>
+            Access and refresh tokens are AES-256-GCM encrypted at rest with
+            per-record IVs. Stored in a local JSON file, never plaintext.
+          </p>
+        </article>
+        <article class="card">
+          <div class="card-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          </div>
+          <h3>Schedule comments</h3>
+          <p>
+            Pick any future date and time. node-cron polls every minute and
+            posts at the right moment, even after restarts.
+          </p>
+        </article>
+        <article class="card">
+          <div class="card-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15A9 9 0 1 1 18 5.3l5 4.7"/></svg>
+          </div>
+          <h3>Auto-refresh tokens</h3>
+          <p>
+            Five minutes before any TikTok call we refresh the access token if
+            it's about to expire. You never see a 401.
+          </p>
+        </article>
+        <article class="card">
+          <div class="card-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h12"/></svg>
+          </div>
+          <h3>Queue &amp; history</h3>
+          <p>
+            See every pending, succeeded, failed, and cancelled comment in
+            chronological order. Cancel anything that hasn't run yet.
+          </p>
+        </article>
+        <article class="card">
+          <div class="card-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <h3>Multi-user, isolated</h3>
+          <p>
+            Sign up with email + password. Each user's TikTok accounts and
+            comment history are scoped to them only.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <section id="how-it-works" class="section alt">
+      <div class="section-head">
+        <span class="eyebrow">How it works</span>
+        <h2>Up and running in three steps</h2>
+        <p class="lead">
+          No databases to spin up, no cron daemons to babysit, no complex
+          deploys. Self-host on your laptop in minutes.
+        </p>
+      </div>
+      <ol class="steps">
+        <li>
+          <div class="step-number">1</div>
+          <h3>Create your TikTok Dev App</h3>
+          <p>
+            Add the Login Kit and Content Posting API products at
+            <a href="https://developers.tiktok.com/" target="_blank" rel="noopener">developers.tiktok.com</a>.
+            Request the four scopes:
+            <code>user.info.basic</code>, <code>video.list</code>,
+            <code>comment.list.manage</code>, <code>comment.publish</code>.
+          </p>
+        </li>
+        <li>
+          <div class="step-number">2</div>
+          <h3>Sign up &amp; connect</h3>
+          <p>
+            Create your account in the dashboard, then click <strong>Connect
+            TikTok Account</strong>. TikTok's official consent screen handles
+            login and scope approval. Repeat for every account you own.
+          </p>
+        </li>
+        <li>
+          <div class="step-number">3</div>
+          <h3>Comment &amp; schedule</h3>
+          <p>
+            Paste a video URL, pick an account, write your comment, and either
+            post immediately or pick a future time. Watch the queue and history
+            update live.
+          </p>
+        </li>
+      </ol>
+    </section>
+
+    <section id="demo" class="section">
+      <div class="section-head">
+        <span class="eyebrow">Demo</span>
+        <h2>What the dashboard looks like</h2>
+        <p class="lead">
+          Dark, focused, and built around the four things you actually do:
+          connect accounts, post comments, watch the queue, and review history.
+        </p>
+      </div>
+      <div class="demo-frame" aria-hidden="true">
+        <div class="demo-window">
+          <div class="demo-titlebar">
+            <span class="hero-dot red"></span>
+            <span class="hero-dot teal"></span>
+            <span class="hero-dot mute"></span>
+            <span class="demo-url">tiktok-comment-manager.local/app</span>
+          </div>
+          <div class="demo-tabs">
+            <span>Accounts</span>
+            <span class="active">Post Comment</span>
+            <span>Queue</span>
+            <span>History</span>
+          </div>
+          <div class="demo-body">
+            <div class="demo-form">
+              <label>Account</label>
+              <div class="demo-input">@your.handle</div>
+              <label>Video URL</label>
+              <div class="demo-input">
+                https://www.tiktok.com/@user/video/7281234567890123456
+              </div>
+              <label>Schedule (optional)</label>
+              <div class="demo-input">2026-06-01 10:30 (local)</div>
+              <label>Comment</label>
+              <div class="demo-textarea">
+                love this — already saved to my collection 💛
+              </div>
+              <div class="demo-actions">
+                <span class="badge scheduled">will run in 14m</span>
+                <span class="btn primary sm">Post comment</span>
+              </div>
+            </div>
+            <div class="demo-side">
+              <h4>Up next in queue</h4>
+              <div class="demo-job">
+                <span class="badge scheduled">scheduled</span>
+                <strong>@side.project</strong>
+                <span class="muted">in 1h 12m</span>
+              </div>
+              <div class="demo-job">
+                <span class="badge pending">pending</span>
+                <strong>@brand.alt</strong>
+                <span class="muted">running…</span>
+              </div>
+              <div class="demo-job">
+                <span class="badge success">success</span>
+                <strong>@your.handle</strong>
+                <span class="muted">2 minutes ago</span>
+              </div>
+              <div class="demo-job">
+                <span class="badge failed">failed</span>
+                <strong>@brand.alt</strong>
+                <span class="muted">scope denied</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="pricing" class="section alt">
+      <div class="section-head">
+        <span class="eyebrow">Pricing</span>
+        <h2>Free to self-host. Always.</h2>
+        <p class="lead">
+          The whole thing is open source and runs on your own machine. The
+          paid tiers below describe a hosted version we are exploring — they
+          are not active yet.
+        </p>
+      </div>
+      <div class="pricing-grid">
+        <article class="price-card featured">
+          <header>
+            <span class="eyebrow">Self-hosted</span>
+            <div class="price"><span>$0</span><small>forever</small></div>
+            <p>Run it on your laptop or a $5 VPS.</p>
+          </header>
+          <ul>
+            <li>Unlimited TikTok accounts</li>
+            <li>Unlimited scheduled comments</li>
+            <li>AES-256 encrypted token vault</li>
+            <li>Multi-user signup &amp; login</li>
+            <li>Full source on GitHub</li>
+          </ul>
+          <a class="btn primary" href="/signup">Sign up &amp; install</a>
+        </article>
+        <article class="price-card">
+          <header>
+            <span class="eyebrow">Pro (hosted)</span>
+            <div class="price"><span>$9</span><small>/ month</small></div>
+            <p>Hosted by us. Backups, monitoring, no setup.</p>
+          </header>
+          <ul>
+            <li>Everything in Self-hosted</li>
+            <li>Daily off-site backups</li>
+            <li>Status alerts on token failures</li>
+            <li>Priority email support</li>
+          </ul>
+          <span class="btn ghost disabled">Coming soon</span>
+        </article>
+        <article class="price-card">
+          <header>
+            <span class="eyebrow">Team</span>
+            <div class="price"><span>$29</span><small>/ month</small></div>
+            <p>For small social media teams.</p>
+          </header>
+          <ul>
+            <li>Everything in Pro</li>
+            <li>Up to 10 seats</li>
+            <li>Per-seat audit log</li>
+            <li>Role-based access</li>
+          </ul>
+          <span class="btn ghost disabled">Coming soon</span>
+        </article>
+      </div>
+    </section>
+
+    <section id="faq" class="section">
+      <div class="section-head">
+        <span class="eyebrow">FAQ</span>
+        <h2>Frequently asked</h2>
+      </div>
+      <div class="faq">
+        <details>
+          <summary>Is this allowed by TikTok?</summary>
+          <p>
+            Yes — every API call goes through TikTok's official Login Kit and
+            v2 Content APIs at <code>open.tiktokapis.com</code>. You can only
+            comment as accounts that have explicitly granted the
+            <code>comment.publish</code> scope to your app.
+          </p>
+        </details>
+        <details>
+          <summary>Where are my tokens stored?</summary>
+          <p>
+            In a local JSON file inside the <code>data/</code> folder of your
+            install. Both <code>access_token</code> and
+            <code>refresh_token</code> are AES-256-GCM encrypted with a key from
+            your <code>ENCRYPTION_KEY</code> env var. The file is created with
+            <code>0600</code> permissions.
+          </p>
+        </details>
+        <details>
+          <summary>Can I manage someone else's TikTok?</summary>
+          <p>
+            Only with their consent — they have to log in through TikTok's own
+            OAuth screen on your install. There's no way to attach an account
+            without going through TikTok itself.
+          </p>
+        </details>
+        <details>
+          <summary>What if my access token expires?</summary>
+          <p>
+            We refresh it automatically. Before any TikTok API call we check
+            <code>tokenExpiresAt - now &gt; 5 minutes</code>; if not, we hit
+            <code>POST /v2/oauth/token/</code> with the refresh token and
+            persist the new tokens before continuing.
+          </p>
+        </details>
+        <details>
+          <summary>Do you store my password?</summary>
+          <p>
+            Only as a salted scrypt hash (<code>N=32768, r=8, p=1</code>). The
+            plaintext password never touches disk. Sessions are HttpOnly
+            cookies signed with HS256 JWTs.
+          </p>
+        </details>
+        <details>
+          <summary>Can I run multiple accounts on one machine?</summary>
+          <p>
+            Yes. Each user signs up separately, and TikTok accounts are scoped
+            per user — you can't see or post from another user's TikTok.
+          </p>
+        </details>
+      </div>
+    </section>
+
+    <section class="cta-band">
+      <div class="cta-inner">
+        <h2>Stop tab-juggling. Start managing.</h2>
+        <p>
+          Two minutes from <code>git clone</code> to your first scheduled
+          comment.
+        </p>
+        <div class="hero-actions">
+          <a class="btn primary lg" href="/signup">Create your free account</a>
+          <a
+            class="btn ghost lg"
+            href="https://github.com/HamzaHBY/tiktok-comment-manager"
+            target="_blank"
+            rel="noopener"
+            >View on GitHub</a
+          >
+        </div>
+      </div>
+    </section>
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <div>
+          <a class="brand" href="/">
+            <span class="brand-dot"></span>
+            <span>TikTok Comment Manager</span>
+          </a>
+          <p class="muted small">
+            A self-hosted productivity tool for managing your own TikTok
+            accounts. Built on TikTok's official Developer APIs.
+          </p>
+        </div>
+        <div class="footer-cols">
+          <div>
+            <h5>Product</h5>
+            <a href="#features">Features</a>
+            <a href="#how-it-works">How it works</a>
+            <a href="#pricing">Pricing</a>
+            <a href="/app">Dashboard</a>
+          </div>
+          <div>
+            <h5>Account</h5>
+            <a href="/login">Log in</a>
+            <a href="/signup">Sign up</a>
+          </div>
+          <div>
+            <h5>Resources</h5>
+            <a
+              href="https://developers.tiktok.com/"
+              target="_blank"
+              rel="noopener"
+              >TikTok for Developers</a
+            >
+            <a
+              href="https://github.com/HamzaHBY/tiktok-comment-manager"
+              target="_blank"
+              rel="noopener"
+              >GitHub repo</a
+            >
+            <a
+              href="https://github.com/HamzaHBY/tiktok-comment-manager#readme"
+              target="_blank"
+              rel="noopener"
+              >Setup guide</a
+            >
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>&copy; <span id="year"></span> tiktok-comment-manager</span>
+        <span>MIT licensed · not affiliated with TikTok</span>
+      </div>
+    </footer>
 
     <script>
-      (function () {
-        var TABS = ["accounts", "post", "queue", "history"];
-        var state = { accounts: [], jobs: [] };
-
-        function $(sel, root) {
-          return (root || document).querySelector(sel);
-        }
-        function $$(sel, root) {
-          return Array.prototype.slice.call(
-            (root || document).querySelectorAll(sel)
-          );
-        }
-
-        function showTab(name) {
-          TABS.forEach(function (t) {
-            var sec = document.querySelector('[data-panel="' + t + '"]');
-            if (sec) sec.hidden = t !== name;
-          });
-          $$("#tabs button").forEach(function (b) {
-            b.classList.toggle("active", b.dataset.tab === name);
-          });
-          if (name === "accounts") loadAccounts();
-          if (name === "post") loadAccounts();
-          if (name === "queue" || name === "history") loadJobs();
-        }
-
-        function toast(msg, kind) {
-          var el = document.createElement("div");
-          el.className = "toast " + (kind || "");
-          el.textContent = msg;
-          $("#toasts").appendChild(el);
-          setTimeout(function () {
-            el.style.opacity = "0";
-            el.style.transition = "opacity .3s ease";
-            setTimeout(function () {
-              el.remove();
-            }, 300);
-          }, 4000);
-        }
-
-        function escapeHtml(s) {
-          return String(s == null ? "" : s)
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#39;");
-        }
-
-        function fmtDate(iso) {
-          if (!iso) return "—";
-          try {
-            return new Date(iso).toLocaleString();
-          } catch (e) {
-            return iso;
-          }
-        }
-
-        function api(path, opts) {
-          opts = opts || {};
-          var headers = Object.assign(
-            { "Content-Type": "application/json" },
-            opts.headers || {}
-          );
-          return fetch(path, {
-            method: opts.method || "GET",
-            headers: headers,
-            body: opts.body ? JSON.stringify(opts.body) : undefined,
-          }).then(function (r) {
-            return r.json().then(function (j) {
-              if (!r.ok) {
-                throw new Error(j.error || ("Request failed: " + r.status));
-              }
-              return j;
-            });
-          });
-        }
-
-        function loadHealth() {
-          api("/api/health")
-            .then(function (h) {
-              $("#health-meta").textContent =
-                "Redirect URI: " + h.redirectUri;
-            })
-            .catch(function () {
-              $("#health-meta").textContent = "Server unreachable";
-            });
-        }
-
-        function loadAccounts() {
-          return api("/api/accounts").then(function (res) {
-            state.accounts = res.accounts || [];
-            renderAccounts();
-            renderAccountSelect();
-          });
-        }
-
-        function loadJobs() {
-          return api("/api/jobs").then(function (res) {
-            state.jobs = res.jobs || [];
-            renderQueue();
-            renderHistory();
-          });
-        }
-
-        function renderAccounts() {
-          var root = $("#accounts-list");
-          if (!state.accounts.length) {
-            root.innerHTML =
-              '<div class="empty">No accounts connected yet. Click <strong>Connect TikTok Account</strong> to start the OAuth flow.</div>';
-            return;
-          }
-          root.innerHTML = state.accounts
-            .map(function (a) {
-              var initial = (a.displayName || a.openId || "?")
-                .toString()
-                .charAt(0)
-                .toUpperCase();
-              var avatar = a.avatarUrl
-                ? '<img src="' + escapeHtml(a.avatarUrl) + '" alt="" />'
-                : escapeHtml(initial);
-              var expires = a.tokenExpiresAt
-                ? "Token expires " + fmtDate(new Date(a.tokenExpiresAt).toISOString())
-                : "";
-              return (
-                '<div class="account-card" data-id="' +
-                escapeHtml(a.id) +
-                '">' +
-                '<div class="avatar">' +
-                avatar +
-                "</div>" +
-                '<div class="info">' +
-                '<div class="name">' +
-                escapeHtml(a.displayName || "TikTok user") +
-                "</div>" +
-                '<div class="meta">open_id: ' +
-                escapeHtml(a.openId) +
-                (expires ? " · " + escapeHtml(expires) : "") +
-                "</div>" +
-                "</div>" +
-                '<button class="danger" data-action="disconnect" data-id="' +
-                escapeHtml(a.id) +
-                '">Disconnect</button>' +
-                "</div>"
-              );
-            })
-            .join("");
-        }
-
-        function renderAccountSelect() {
-          var sel = $("#f-account");
-          if (!sel) return;
-          var prev = sel.value;
-          sel.innerHTML = state.accounts.length
-            ? state.accounts
-                .map(function (a) {
-                  return (
-                    '<option value="' +
-                    escapeHtml(a.id) +
-                    '">' +
-                    escapeHtml(a.displayName || a.openId) +
-                    "</option>"
-                  );
-                })
-                .join("")
-            : '<option value="" disabled selected>Connect an account first</option>';
-          if (prev) sel.value = prev;
-        }
-
-        function jobBadge(status) {
-          return (
-            '<span class="badge ' +
-            escapeHtml(status) +
-            '">' +
-            escapeHtml(status) +
-            "</span>"
-          );
-        }
-
-        function renderJobCard(job, opts) {
-          opts = opts || {};
-          var account =
-            (job.accountDisplayName || job.accountOpenId || job.accountId) +
-            "";
-          var error =
-            job.error && job.error.message
-              ? '<div class="meta" style="color:var(--danger)">Error: ' +
-                escapeHtml(job.error.message) +
-                "</div>"
-              : "";
-          var actions = "";
-          if (opts.cancelable) {
-            actions =
-              '<div class="actions"><button class="ghost" data-action="cancel" data-id="' +
-              escapeHtml(job.id) +
-              '">Cancel</button></div>';
-          }
-          return (
-            '<div class="job-card" data-id="' +
-            escapeHtml(job.id) +
-            '">' +
-            '<div class="top">' +
-            "<div><strong>" +
-            escapeHtml(account) +
-            "</strong> · " +
-            jobBadge(job.status) +
-            "</div>" +
-            '<div class="meta">Run at ' +
-            escapeHtml(fmtDate(job.runAt)) +
-            "</div>" +
-            "</div>" +
-            '<div class="body">' +
-            escapeHtml(job.comment) +
-            "</div>" +
-            '<div class="meta">Video: <a target="_blank" rel="noopener" href="' +
-            escapeHtml(job.videoUrl) +
-            '">' +
-            escapeHtml(job.videoUrl) +
-            "</a></div>" +
-            error +
-            actions +
-            "</div>"
-          );
-        }
-
-        function renderQueue() {
-          var root = $("#queue-list");
-          var queueJobs = state.jobs.filter(function (j) {
-            return j.status === "scheduled" || j.status === "pending" || j.status === "running";
-          });
-          if (!queueJobs.length) {
-            root.innerHTML = '<div class="empty">No pending or scheduled comments.</div>';
-            return;
-          }
-          root.innerHTML = queueJobs
-            .map(function (j) {
-              return renderJobCard(j, {
-                cancelable: j.status === "scheduled" || j.status === "pending",
-              });
-            })
-            .join("");
-        }
-
-        function renderHistory() {
-          var root = $("#history-list");
-          var historyJobs = state.jobs.filter(function (j) {
-            return (
-              j.status === "success" ||
-              j.status === "failed" ||
-              j.status === "cancelled"
-            );
-          });
-          if (!historyJobs.length) {
-            root.innerHTML = '<div class="empty">No history yet.</div>';
-            return;
-          }
-          root.innerHTML = historyJobs.map(function (j) { return renderJobCard(j); }).join("");
-        }
-
-        function startConnect() {
-          var w = window.open(
-            "/auth/tiktok",
-            "tiktok-oauth",
-            "width=520,height=720"
-          );
-          if (!w) {
-            window.location.href = "/auth/tiktok";
-            return;
-          }
-          var poll = setInterval(function () {
-            try {
-              if (w.closed) {
-                clearInterval(poll);
-                loadAccounts();
-              }
-            } catch (e) {
-              /* ignore */
-            }
-          }, 1000);
-        }
-
-        document.addEventListener("click", function (ev) {
-          var t = ev.target;
-          if (!(t instanceof HTMLElement)) return;
-          if (t.matches("#tabs button")) {
-            showTab(t.dataset.tab);
-            return;
-          }
-          if (t.id === "btn-connect") {
-            startConnect();
-            return;
-          }
-          if (t.id === "btn-refresh-accounts") {
-            loadAccounts().then(function () { toast("Accounts refreshed"); });
-            return;
-          }
-          if (t.id === "btn-refresh-queue" || t.id === "btn-refresh-history") {
-            loadJobs().then(function () { toast("Refreshed"); });
-            return;
-          }
-          if (t.id === "btn-clear-history") {
-            if (!confirm("Clear all history (success / failed / cancelled)?")) return;
-            api("/api/jobs/clear", { method: "DELETE" })
-              .then(function (r) {
-                toast("Cleared " + r.cleared + " entries", "success");
-                loadJobs();
-              })
-              .catch(function (err) { toast(err.message, "error"); });
-            return;
-          }
-          if (t.dataset.action === "disconnect") {
-            if (!confirm("Disconnect this TikTok account?")) return;
-            api("/api/accounts/" + encodeURIComponent(t.dataset.id), {
-              method: "DELETE",
-            })
-              .then(function () {
-                toast("Account disconnected", "success");
-                loadAccounts();
-              })
-              .catch(function (err) { toast(err.message, "error"); });
-            return;
-          }
-          if (t.dataset.action === "cancel") {
-            api("/api/jobs/" + encodeURIComponent(t.dataset.id) + "/cancel", {
-              method: "POST",
-            })
-              .then(function () {
-                toast("Job cancelled", "success");
-                loadJobs();
-              })
-              .catch(function (err) { toast(err.message, "error"); });
-            return;
-          }
-        });
-
-        $("#comment-form").addEventListener("submit", function (ev) {
-          ev.preventDefault();
-          var btn = $("#btn-submit-comment");
-          var accountId = $("#f-account").value;
-          var videoUrl = $("#f-url").value.trim();
-          var comment = $("#f-comment").value.trim();
-          var rawSchedule = $("#f-schedule").value;
-          if (!accountId) return toast("Connect an account first", "error");
-          if (!videoUrl) return toast("Video URL is required", "error");
-          if (!comment) return toast("Comment is required", "error");
-
-          var body = { accountId: accountId, videoUrl: videoUrl, comment: comment };
-          if (rawSchedule) {
-            var ts = new Date(rawSchedule);
-            if (isNaN(ts.getTime())) return toast("Invalid schedule date", "error");
-            body.scheduleAt = ts.toISOString();
-          }
-
-          btn.disabled = true;
-          btn.innerHTML = '<span class="spinner"></span>Submitting…';
-          api("/api/comment", { method: "POST", body: body })
-            .then(function (res) {
-              if (res.job && res.job.status === "success") {
-                toast("Comment posted!", "success");
-              } else if (res.job && res.job.status === "scheduled") {
-                toast("Comment scheduled for " + fmtDate(res.job.runAt), "success");
-              } else if (res.job && res.job.status === "failed") {
-                toast(
-                  "Failed: " +
-                    ((res.job.error && res.job.error.message) || "unknown"),
-                  "error"
-                );
-              } else {
-                toast("Comment queued", "success");
-              }
-              $("#f-url").value = "";
-              $("#f-comment").value = "";
-              $("#f-schedule").value = "";
-              loadJobs();
-            })
-            .catch(function (err) { toast(err.message, "error"); })
-            .then(function () {
-              btn.disabled = false;
-              btn.textContent = "Post comment";
-            });
-        });
-
-        window.addEventListener("message", function (ev) {
-          if (ev && ev.data && ev.data.type === "tiktok-oauth") {
-            if (ev.data.ok) {
-              toast("Account connected!", "success");
-            } else {
-              toast("Account connection failed", "error");
-            }
-            loadAccounts();
-          }
-        });
-
-        loadHealth();
-        showTab("accounts");
-        loadJobs();
-        setInterval(function () {
-          if (!document.hidden) loadJobs();
-        }, 30000);
-      })();
+      document.getElementById('year').textContent = new Date().getFullYear();
     </script>
   </body>
 </html>

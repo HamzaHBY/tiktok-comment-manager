@@ -31,7 +31,7 @@ class CommentScheduler {
     if (this._running) return;
     this._running = true;
     try {
-      const all = await this.jobStore.list();
+      const all = await this.jobStore.listAll();
       const now = Date.now();
       const due = all.filter(
         (j) =>

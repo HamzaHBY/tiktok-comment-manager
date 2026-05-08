@@ -7,22 +7,37 @@ const express = require('express');
 
 const { getConfig } = require('./src/config');
 const { AccountStore, JobStore, ensureDataFiles } = require('./src/store');
+const { UserStore, ensureUsersFile } = require('./src/users');
 const { TikTokClient } = require('./src/tiktok');
 const { CommentScheduler } = require('./src/scheduler');
 const { buildAuthRouter } = require('./src/routes/auth');
 const { buildAccountsRouter } = require('./src/routes/accounts');
 const { buildCommentsRouter } = require('./src/routes/comments');
 const { buildJobsRouter } = require('./src/routes/jobs');
+const {
+  buildAuthMiddleware,
+  buildAuthAppRouter,
+  requireAuth,
+} = require('./src/routes/users');
+
+const PUBLIC_PAGES = {
+  '/': 'index.html',
+  '/login': 'login.html',
+  '/signup': 'signup.html',
+  '/app': 'app.html',
+};
 
 function createApp() {
   const config = getConfig();
   ensureDataFiles(config);
+  ensureUsersFile(config.usersFile);
 
   const accountStore = new AccountStore({
     file: config.accountsFile,
     encryptionKey: config.encryptionKey,
   });
   const jobStore = new JobStore({ file: config.jobsFile });
+  const userStore = new UserStore({ file: config.usersFile });
 
   const tiktokClient = new TikTokClient({
     clientKey: config.clientKey,
@@ -41,21 +56,42 @@ function createApp() {
   app.use(express.json({ limit: '64kb' }));
   app.use(express.urlencoded({ extended: false, limit: '64kb' }));
 
-  app.use(express.static(path.join(__dirname, 'public')));
+  const attachUser = buildAuthMiddleware({ userStore, config });
+  app.use(attachUser);
+
+  Object.keys(PUBLIC_PAGES).forEach((route) => {
+    const file = PUBLIC_PAGES[route];
+    app.get(route, (req, res) => {
+      res.sendFile(path.join(__dirname, 'public', file));
+    });
+  });
+
+  app.use(
+    express.static(path.join(__dirname, 'public'), { index: false })
+  );
+
+  app.use('/api/auth', buildAuthAppRouter({ userStore, config }));
 
   app.use(
     '/auth',
     buildAuthRouter({ tiktokClient, accountStore, stateStore })
   );
+
   app.use(
     '/api/accounts',
+    requireAuth,
     buildAccountsRouter({ accountStore, tiktokClient })
   );
   app.use(
     '/api/comment',
+    requireAuth,
     buildCommentsRouter({ accountStore, jobStore, scheduler, tiktokClient })
   );
-  app.use('/api/jobs', buildJobsRouter({ jobStore, scheduler }));
+  app.use(
+    '/api/jobs',
+    requireAuth,
+    buildJobsRouter({ jobStore, scheduler })
+  );
 
   app.get('/api/health', (req, res) => {
     res.json({
@@ -63,6 +99,7 @@ function createApp() {
       appUrl: config.appUrl,
       redirectUri: config.redirectUri,
       scopes: config.scopes,
+      authenticated: !!req.user,
     });
   });
 

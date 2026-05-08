@@ -7,7 +7,7 @@ function buildJobsRouter({ jobStore, scheduler }) {
 
   router.get('/', async (req, res, next) => {
     try {
-      const jobs = await jobStore.list();
+      const jobs = await jobStore.listForUser(req.user.id);
       res.json({ jobs });
     } catch (err) {
       next(err);
@@ -16,7 +16,7 @@ function buildJobsRouter({ jobStore, scheduler }) {
 
   router.delete('/clear', async (req, res, next) => {
     try {
-      const cleared = await jobStore.clear();
+      const cleared = await jobStore.clearForUser(req.user.id);
       res.json({ ok: true, cleared });
     } catch (err) {
       next(err);
@@ -25,8 +25,9 @@ function buildJobsRouter({ jobStore, scheduler }) {
 
   router.post('/:id/cancel', async (req, res, next) => {
     try {
+      const owned = await jobStore.getByIdForUser(req.params.id, req.user.id);
+      if (!owned) return res.status(404).json({ error: 'Job not found' });
       const job = await scheduler.cancelJob(req.params.id);
-      if (!job) return res.status(404).json({ error: 'Job not found' });
       res.json({ job });
     } catch (err) {
       next(err);

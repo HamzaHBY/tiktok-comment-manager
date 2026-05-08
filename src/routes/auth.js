@@ -8,8 +8,11 @@ function buildAuthRouter({ tiktokClient, accountStore, stateStore }) {
   const router = express.Router();
 
   router.get('/tiktok', (req, res) => {
+    if (!req.user) {
+      return res.redirect('/login?next=/app');
+    }
     const state = generateRandomState(24);
-    stateStore.set(state, { createdAt: Date.now() });
+    stateStore.set(state, { userId: req.user.id, createdAt: Date.now() });
     setTimeout(() => stateStore.delete(state), 10 * 60 * 1000).unref();
     const url = tiktokClient.buildAuthorizeUrl(state);
     res.redirect(url);
@@ -36,7 +39,8 @@ function buildAuthRouter({ tiktokClient, accountStore, stateStore }) {
           message: 'Missing code or state in TikTok callback.',
         }));
     }
-    if (!stateStore.has(String(state))) {
+    const stateEntry = stateStore.get(String(state));
+    if (!stateEntry || !stateEntry.userId) {
       return res
         .status(400)
         .send(renderCallbackPage({
@@ -58,6 +62,7 @@ function buildAuthRouter({ tiktokClient, accountStore, stateStore }) {
         );
       }
       const account = await accountStore.upsertFromTokenResponse(
+        stateEntry.userId,
         tokenInfo,
         profile
       );
@@ -104,7 +109,7 @@ function renderCallbackPage({ ok, account, message }) {
     title +
     '</h1>' +
     body +
-    '<p><a href="/">Back to dashboard</a></p>' +
+    '<p><a href="/app">Back to dashboard</a></p>' +
     '<script>try{if(window.opener){window.opener.postMessage({type:"tiktok-oauth",ok:' +
     (ok ? 'true' : 'false') +
     '},"*");}}catch(e){}</script>' +
